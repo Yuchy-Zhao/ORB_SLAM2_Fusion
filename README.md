@@ -73,6 +73,59 @@ Required by g2o (see below). Download and install instructions can be found at: 
 ## DBoW2 and g2o (Included in Thirdparty folder)
 We use modified versions of the [DBoW2](https://github.com/dorian3d/DBoW2) library to perform place recognition and [g2o](https://github.com/RainerKuemmerle/g2o) library to perform non-linear optimizations. Both modified libraries (which are BSD) are included in the *Thirdparty* folder.
 
+## Nvblox
+
+### Step 1: Install dependencies
+We need `glog`, `sqlite3`, and `gflags` prepared for static linking. To get these ready do:
+**Sqlite3**:  
+```bash
+cd Thirdparty
+wget https://sqlite.org/2022/sqlite-autoconf-3400100.tar.gz
+tar -xvf sqlite-autoconf-3400100.tar.gz
+cd sqlite-autoconf-3400100
+mkdir install
+CFLAGS=-fPIC ./configure --prefix=$PWD/install/
+make
+make install
+cd ..
+```
+
+**glog**:  
+```bash
+wget https://github.com/google/glog/archive/refs/tags/v0.4.0.tar.gz
+tar -xvf v0.4.0.tar.gz
+cd glog-0.4.0
+mkdir build
+mkdir install
+cd build
+cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$PWD/../install/ -DWITH_GFLAGS=OFF -DBUILD_SHARED_LIBS=OFF
+make -j8
+make install
+cd ../..
+```
+
+**gflags**:  
+```bash
+wget https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
+tar -xvf v2.2.2.tar.gz
+cd gflags-2.2.2/
+mkdir build
+mkdir install
+cd build
+cmake .. -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX=$PWD/../install/ -DGFLAGS_BUILD_STATIC_LIBS=ON -DGFLAGS=google && make -j8 && make install
+cd ../..
+```
+
+### Step 2: Build nvblox
+Build nvblox with the paths set to where you've unzipped and built the dependencies:
+```
+cd nvblox/
+mkdir build install
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/home/yuchy/Dev/ORB_SLAM2/Thirdparty/nvblox/nvblox/install/ -DBUILD_FOR_ALL_ARCHS=TRUE -DBUILD_REDISTRIBUTABLE=TRUE -DSQLITE3_BASE_PATH="/home/yuchy/Dev/ORB_SLAM2/Thirdparty/sqlite-autoconf-3400100/install/" -DGLOG_BASE_PATH="/home/yuchy/Dev/ORB_SLAM2/Thirdparty/glog-0.4.0/install/" -DGFLAGS_BASE_PATH="/home/yuchy/Dev/ORB_SLAM2/Thirdparty/gflags-2.2.2/install/"
+make -j8 && make install
+```
+
 ## ROS (optional)
 We provide some examples to process the live input of a monocular, stereo or RGB-D camera using [ROS](ros.org). Building these examples is optional. In case you want to use ROS, a version Hydro or newer is needed.
 
