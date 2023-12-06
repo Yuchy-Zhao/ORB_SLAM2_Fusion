@@ -68,3 +68,8 @@ Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500
 
+#--------------------------------------------------------------------------------------------
+# Fusion Parameters
+#--------------------------------------------------------------------------------------------
+DepthFusion.voxelSize: 0.05
+DepthFusion.savePath: /home/yuchy/Dev/ORB_SLAM2/Test/

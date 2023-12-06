@@ -37,6 +37,7 @@
 #include "Initializer.h"
 #include "MapDrawer.h"
 #include "System.h"
+#include "DepthFusion.h"
 
 #include <mutex>
 
@@ -49,12 +50,13 @@ class Map;
 class LocalMapping;
 class LoopClosing;
 class System;
+class DepthFusion;
 
 class Tracking
 {  
 
 public:
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
+    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap, DepthFusion* pDepthFusion,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
@@ -95,6 +97,9 @@ public:
     // Current Frame
     Frame mCurrentFrame;
     cv::Mat mImGray;
+    cv::Mat mImDepth;
+    cv::Mat mImRGB;
+    cv::Mat mImD;
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
@@ -169,6 +174,9 @@ protected:
     KeyFrame* mpReferenceKF;
     std::vector<KeyFrame*> mvpLocalKeyFrames;
     std::vector<MapPoint*> mvpLocalMapPoints;
+
+    // TSDF Fusion
+    DepthFusion* mpDepthFusion;
     
     // System
     System* mpSystem;

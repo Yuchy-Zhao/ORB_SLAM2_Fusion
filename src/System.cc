@@ -81,10 +81,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
+    //Initialize the Fusion setup
+    float voxelSize = fsSettings["DepthFusion.voxelSize"];
+    std::string savePath = fsSettings["DepthFusion.savePath"];
+    mpDepthFusion = new DepthFusion(voxelSize, savePath);
+
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, mpDepthFusion, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
@@ -302,6 +307,7 @@ void System::Shutdown()
 {
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
+    mpDepthFusion->Shutdown();
     if(mpViewer)
     {
         mpViewer->RequestFinish();
