@@ -71,4 +71,4 @@ Viewer.ViewpointF: 500
 #--------------------------------------------------------------------------------------------
 # Fusion Parameters
 #--------------------------------------------------------------------------------------------
-DepthFusion.savePath: /home/luvision/Develops/ORB_SLAM2/Test/
+DepthFusion.savePath: /home/luvision/catkin_ws/src/ORB_SLAM2/Test/

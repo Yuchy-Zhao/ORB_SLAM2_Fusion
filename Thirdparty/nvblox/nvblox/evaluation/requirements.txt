@@ -1,7 +1,0 @@
-matplotlib
-numpy
-plotly
-open3d
-pandas
-scipy
-trimesh

@@ -64,6 +64,12 @@ void DepthFusion::SaveKeyFrame(std::string savePath)
         std::stringstream depthPath;
         depthPath << savePath << "results/depth" << std::setw(6) << std::setfill('0') << i << ".png";
         cv::imwrite(colorPath.str(), mvColorImgs[i]);
+        cv::Mat depth;
+        if (depthFactor == 1.0)
+        {
+            mvDepthImgs[i] *= 6553.5;
+            mvDepthImgs[i].convertTo(mvDepthImgs[i], CV_16U);
+        }
         cv::imwrite(depthPath.str(), mvDepthImgs[i]);
         KeyFrame* pKF = mvpKeyFrames[i];
         cv::Mat T;
@@ -81,7 +87,7 @@ void DepthFusion::TSDFFusion(std::string savePath)
 {
     size_t N = mvpKeyFrames.size();
     open3d::pipelines::integration::ScalableTSDFVolume volume(
-        4.0 / 512.0, 0.04, open3d::pipelines::integration::TSDFVolumeColorType(1)
+        0.01, 0.04, open3d::pipelines::integration::TSDFVolumeColorType(1)
     );
     for (size_t i=0; i<N ; i++)
     {
@@ -93,7 +99,10 @@ void DepthFusion::TSDFFusion(std::string savePath)
         open3d::geometry::Image depth;
         open3d::io::ReadImage(colorPath.str(), color);
         open3d::io::ReadImage(depthPath.str(), depth);
-        auto RGBD = open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, depthFactor, 6.0, false);
+        double depthscale = depthFactor;
+        if (depthFactor == 1.0)
+            depthscale = 6553.5;
+        auto RGBD = open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, depthscale, 6.0, false);
         KeyFrame* pKF = mvpKeyFrames[i];
         cv::Mat cT = pKF->GetPose();
         Eigen::Matrix4f fT;

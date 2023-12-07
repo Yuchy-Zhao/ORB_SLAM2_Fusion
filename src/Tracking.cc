@@ -74,6 +74,24 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         DistCoef.resize(5);
         DistCoef.at<float>(4) = k3;
     }
+    const float k4 = fSettings["Camera.k4"];
+    if(k4!=0)
+    {
+        DistCoef.resize(6);
+        DistCoef.at<float>(5) = k4;
+    }
+    const float k5 = fSettings["Camera.k5"];
+    if(k5!=0)
+    {
+        DistCoef.resize(7);
+        DistCoef.at<float>(6) = k5;
+    }
+    const float k6 = fSettings["Camera.k6"];
+    if(k6!=0)
+    {
+        DistCoef.resize(8);
+        DistCoef.at<float>(7) = k6;
+    }
     DistCoef.copyTo(mDistCoef);
 
     mbf = fSettings["Camera.bf"];
@@ -93,8 +111,13 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     cout << "- cy: " << cy << endl;
     cout << "- k1: " << DistCoef.at<float>(0) << endl;
     cout << "- k2: " << DistCoef.at<float>(1) << endl;
-    if(DistCoef.rows==5)
+    if(DistCoef.rows==8)
+    {
         cout << "- k3: " << DistCoef.at<float>(4) << endl;
+        cout << "- k4: " << DistCoef.at<float>(5) << endl;
+        cout << "- k5: " << DistCoef.at<float>(6) << endl;
+        cout << "- k6: " << DistCoef.at<float>(7) << endl;
+    }
     cout << "- p1: " << DistCoef.at<float>(2) << endl;
     cout << "- p2: " << DistCoef.at<float>(3) << endl;
     cout << "- fps: " << fps << endl;
@@ -211,6 +234,10 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     mImRGB = imRGB;
     mImD = imD;
 
+    if(mImRGB.channels()==4)
+    {
+        cvtColor(mImRGB,mImRGB,CV_RGBA2RGB);
+    }
     if(mImGray.channels()==3)
     {
         if(mbRGB)
