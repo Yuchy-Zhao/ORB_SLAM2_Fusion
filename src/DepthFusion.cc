@@ -26,9 +26,9 @@
 namespace ORB_SLAM2
 {
 
-DepthFusion::DepthFusion(double voxelSize, std::string savePath)
+DepthFusion::DepthFusion(double depthFactor, std::string savePath)
 {
-    this->voxelSize = voxelSize;
+    this->depthFactor = depthFactor;
     this->savePath = savePath;
     // this->mTSDFMap = Mapper(voxel_size_s, MemoryType::kDevice);
 }
@@ -38,6 +38,7 @@ void DepthFusion::Shutdown()
     unique_lock<mutex> lock(mMutexShutdown);
     mbShutdown = true;
     this->SaveKeyFrame(this->savePath);
+    this->TSDFFusion(this->savePath);
 }
 
 void DepthFusion::InsertKeyFrame(KeyFrame* pKF, cv::Mat &imRGB, cv::Mat &imD)
@@ -56,13 +57,10 @@ void DepthFusion::SaveKeyFrame(std::string savePath)
     filename << savePath << "traj.txt";
     f.open(filename.str());
     f << fixed;
-    open3d::pipelines::integration::ScalableTSDFVolume volume(
-        4.0 / 512.0, 0.04, open3d::pipelines::integration::TSDFVolumeColorType(1)
-    );
     for (size_t i=0; i<N ; i++)
     {
         std::stringstream colorPath;
-        colorPath << savePath << "results/frame" << std::setw(6) << std::setfill('0') << i << ".jpg";
+        colorPath << savePath << "results/frame" << std::setw(6) << std::setfill('0') << i << ".png";
         std::stringstream depthPath;
         depthPath << savePath << "results/depth" << std::setw(6) << std::setfill('0') << i << ".png";
         cv::imwrite(colorPath.str(), mvColorImgs[i]);
@@ -74,28 +72,44 @@ void DepthFusion::SaveKeyFrame(std::string savePath)
                 << T.at<float>(1,0) << " " << T.at<float>(1,1)  << " " << T.at<float>(1,2)  << " " << T.at<float>(1,3)  << " "
                 << T.at<float>(2,0) << " " << T.at<float>(2,1)  << " " << T.at<float>(2,2)  << " " << T.at<float>(2,3)  << " "
                 << T.at<float>(3,0) << " " << T.at<float>(3,1)  << " " << T.at<float>(3,2)  << " " << T.at<float>(3,3)  << endl;
+        std::cout << "Save " << i << "-th image and depth." << std::endl;
+    }
+    f.close();   
+}
+
+void DepthFusion::TSDFFusion(std::string savePath)
+{
+    size_t N = mvpKeyFrames.size();
+    open3d::pipelines::integration::ScalableTSDFVolume volume(
+        4.0 / 512.0, 0.04, open3d::pipelines::integration::TSDFVolumeColorType(1)
+    );
+    for (size_t i=0; i<N ; i++)
+    {
+        std::stringstream colorPath;
+        colorPath << savePath << "results/frame" << std::setw(6) << std::setfill('0') << i << ".png";
+        std::stringstream depthPath;
+        depthPath << savePath << "results/depth" << std::setw(6) << std::setfill('0') << i << ".png";
         open3d::geometry::Image color;
         open3d::geometry::Image depth;
         open3d::io::ReadImage(colorPath.str(), color);
         open3d::io::ReadImage(depthPath.str(), depth);
-        open3d::geometry::RGBDImage rgbd;
-        rgbd.CreateFromColorAndDepth(color, depth, 5000.0, 6.0, false);
+        auto RGBD = open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, depthFactor, 6.0, false);
+        KeyFrame* pKF = mvpKeyFrames[i];
+        cv::Mat cT = pKF->GetPose();
         Eigen::Matrix4f fT;
-        fT << T.at<float>(0,0), T.at<float>(0,1), T.at<float>(0,2), T.at<float>(0,3),
-              T.at<float>(1,0), T.at<float>(1,1), T.at<float>(1,2), T.at<float>(1,3),
-              T.at<float>(2,0), T.at<float>(2,1), T.at<float>(2,2), T.at<float>(2,3),
-              T.at<float>(3,0), T.at<float>(3,1), T.at<float>(3,2), T.at<float>(3,3);
+        fT << cT.at<float>(0,0), cT.at<float>(0,1), cT.at<float>(0,2), cT.at<float>(0,3),
+              cT.at<float>(1,0), cT.at<float>(1,1), cT.at<float>(1,2), cT.at<float>(1,3),
+              cT.at<float>(2,0), cT.at<float>(2,1), cT.at<float>(2,2), cT.at<float>(2,3),
+              cT.at<float>(3,0), cT.at<float>(3,1), cT.at<float>(3,2), cT.at<float>(3,3);
         Eigen::MatrixXd dT = fT.cast<double>(); 
-        volume.Integrate(rgbd, open3d::camera::PinholeCameraIntrinsic(640, 480, 525.0, 525.0, 319.5, 319.5), dT);
-        std::cout << "Integerate" << i << "-th image into the volume." << std::endl;
+        volume.Integrate(*RGBD, open3d::camera::PinholeCameraIntrinsic(RGBD->color_.width_, RGBD->color_.height_, pKF->fx, pKF->fy, pKF->cx, pKF->cy), dT);
+        std::cout << "Integerate " << i << "-th image into the volume." << std::endl;
     }
-    
-}
-
-void DepthFusion::TSDFFusion(KeyFrame* pKF, cv::Mat &imRGB, cv::Mat &imD)
-{
-
-
+    auto mesh = volume.ExtractTriangleMesh();
+    std::stringstream meshname;
+    meshname << savePath << "mesh.ply";
+    open3d::io::WriteTriangleMeshToPLY(meshname.str(), *mesh, true, true, false, true, false, false);
+    std::cout << "Extract mesh and save." << std::endl;
 }
 
 } //namespace ORB_SLAM

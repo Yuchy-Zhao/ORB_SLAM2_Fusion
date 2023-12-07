@@ -82,9 +82,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
     //Initialize the Fusion setup
-    float voxelSize = fsSettings["DepthFusion.voxelSize"];
+    double depthFactor = fsSettings["DepthMapFactor"];
     std::string savePath = fsSettings["DepthFusion.savePath"];
-    mpDepthFusion = new DepthFusion(voxelSize, savePath);
+    mpDepthFusion = new DepthFusion(depthFactor, savePath);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)

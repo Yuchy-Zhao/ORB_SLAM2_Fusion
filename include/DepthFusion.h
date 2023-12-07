@@ -35,17 +35,17 @@ class DepthFusion
 public:
     DepthFusion();
 
-    DepthFusion(double voxelSize, std::string savePath);
+    DepthFusion(double depthFactor, std::string savePath);
 
     void InsertKeyFrame(KeyFrame* pKF, cv::Mat &imRGB, cv::Mat &imD);
 
     void SaveKeyFrame(std::string savePath);
+
+    void TSDFFusion(std::string savePath);
     
     void Shutdown();
 
 protected:
-    void TSDFFusion(KeyFrame* pKF, cv::Mat &imRGB, cv::Mat &imD);
-
     // Mapper mTSDFMap;
 
     std::vector<KeyFrame*> mvpKeyFrames;
@@ -59,7 +59,7 @@ protected:
     std::mutex mMutexKeyFrameUpdate;
     condition_variable mKeyFrameUpdate;
 
-    double voxelSize;
+    double depthFactor;
 
     std::string savePath;
 
